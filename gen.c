@@ -120,6 +120,53 @@ void create_data(char *file_name, uint64_t size){
   free(data);
 }
 
+double encrypt_return_time(char *key_seed, char *file_name, char*encrypted_file_name, unsigned int size){
+  FILE *read_file;
+  if ((read_file = fopen(file_name, "r")))
+  {
+  }
+  else {
+    printf("File %s does not exist. \n",file_name);
+    return 0;
+  }
+
+  FILE * write_file = fopen(encrypted_file_name, "w");
+  if (write_file == NULL)
+  {
+    printf("File does not exists \n");
+    fclose(read_file);
+    return 0;
+  }
+
+  uint8_t *input_array = (uint8_t*) malloc(size * sizeof(uint8_t));
+
+  if (!fread(input_array, sizeof(uint8_t), size, read_file)){
+    printf("Error reading file (encrypt)\n");
+  }
+
+  clock_t begin, end;
+  begin = clock();
+  AES_KEY enc_key;
+  AES_set_encrypt_key(key_seed, AES_KEY_128_BIT, &enc_key);
+  //uint8_t extseed[AES_OUTSIZE]={0};
+  unsigned char iv[128] = {0};
+
+  unsigned char enc_out[256] = {0};
+
+  AES_cbc_encrypt(input_array, input_array, size, &enc_key, iv, AES_ENCRYPT);
+  end = clock();
+  
+
+  fwrite(input_array,sizeof(uint8_t),size,write_file);
+
+  fclose(read_file);
+  fclose(write_file);
+
+
+  free(input_array);
+
+  return (double)(end - begin) / CLOCKS_PER_SEC;
+}
 
 void test_aes(int size, unsigned int runs, int show_output){
 
@@ -157,10 +204,13 @@ void test_aes(int size, unsigned int runs, int show_output){
     time_spent_keygen += (double)(end - begin) / CLOCKS_PER_SEC;
       
       
+    
     begin = clock();
     encrypt(key_seed1, file_name, encrypted_file_name, size);
     end = clock();
     time_spent_encrypt += (double)(end - begin) / CLOCKS_PER_SEC;
+    
+    //time_spent_encrypt +=encrypt_return_time(key_seed1, file_name, encrypted_file_name, size);
 
     begin = clock();
     RAND_bytes(key_seed2, 32);
